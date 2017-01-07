@@ -834,7 +834,7 @@
             expect(aaa.anotherValue).toBeUndefined();
         });
 
-        it("shadows a parent s property with the same name", function() { 
+        it("shadows a parent's property with the same name", function() { 
             var parent = new Scope();
             var child = parent.$new(); 
             parent.name = 'Joe';
@@ -843,13 +843,58 @@
             expect(parent.name).toBe('Joe');
         });
 
-        it("does not shadow members of parent scope s attributes", function() { 
+        it("does not shadow members of parent scope's attributes", function() { 
             var parent = new Scope();
-            var child = parent.$new(); 
-            parent.user = {name:  'Joe' };
+            var child = parent.$new();
+            parent.user = { name: 'Joe' };
             child.user.name = 'Jill';
             expect(child.user.name).toBe('Jill');
             expect(parent.user.name).toBe('Jill');
+        });
+
+        it("does not digest it's parent(s)", function() { 
+            var parent = new Scope();
+            var child = parent.$new();
+            parent.aValue = 'abc';
+            parent.$watch(
+                function(scope) { 
+                    return scope.aValue; 
+                }, function(newValue, oldValue, scope) {
+                    scope.aValueWas = newValue;
+                }
+            );
+
+            child.$digest();
+            expect(child.aValueWas).toBeUndefined();
+            expect(parent.aValueWas).toBeUndefined();
+        });
+
+        it("keeps a record of it's children", function() { 
+            var parent = new Scope();
+            var child1 = parent.$new();
+            var child2 = parent.$new();
+            var child2_1 = child2.$new();
+            expect(parent.$$children.length).toBe(2);
+            expect(parent.$$children[0]).toBe(child1);
+            expect(parent.$$children[1]).toBe(child2);
+            expect(child1.$$children.length).toBe(0);
+            expect(child2.$$children.length).toBe(1);
+            expect(child2.$$children[0]).toBe(child2_1);
+        });
+
+        it("digests it's children", function() {
+            var parent = new Scope();
+            var child = parent.$new();
+            parent.aValue = 'abc';
+            child.$watch(
+                function(scope) { 
+                    return scope.aValue; 
+                }, function(newValue, oldValue, scope) {
+                    scope.aValueWas = newValue;
+                }
+            );
+            parent.$digest();
+            expect(child.aValueWas).toBe('abc');
         });
     });
 });
