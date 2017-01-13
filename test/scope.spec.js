@@ -922,8 +922,9 @@
             parent.aValue = 'abc';
             parent.counter = 0;
             parent.$watch(
-                function(scope) {return scope.aValue; },
-                function(newValue, oldValue, scope) {
+                function(scope) {
+                    return scope.aValue; 
+                }, function(newValue, oldValue, scope) {
                     scope.counter++;
                 }
             );
@@ -934,6 +935,68 @@
                 expect(parent.counter).toBe(1);
                 done();
             }, 50);
+        });
+
+        it("does not have access to parent attributes when isolated", function() {
+            var parent = new Scope();
+            var child = parent.$new(true);
+
+            parent.aValue = 'abc';
+
+            expect(child.aValue).toBeUndefined();
+        });
+
+        it("cannot watch parent attributes when isolated", function() {
+            var parent = new Scope();
+            var child = parent.$new(true);
+
+            parent.aValue = 'abc';
+            child.$watch(
+                function(scope) {
+                    return scope.aValue; 
+                }, function(newValue, oldValue, scope) {
+                    scope.aValueWas = newValue;
+                }
+            );
+
+            child.$digest();
+            expect(child.aValueWas).toBeUndefined();
+        });
+
+        it("digests its isolated children", function() {
+            var parent = new Scope();
+            var child = parent.$new(true);
+
+            child.aValue = 'abc';
+            child.$watch(
+                function(scope) { 
+                    return scope.aValue;
+                }, function(newValue, oldValue, scope) {
+                    scope.aValueWas = newValue;
+                }
+            );
+
+            parent.$digest();
+            expect(child.aValueWas).toBe('abc');
+        });
+
+        it("digests from root on $apply when isolated", function() {
+            var parent = new Scope();
+            var child = parent.$new(true);
+            var child2 = child.$new();
+
+            parent.aValue = 'abc';
+            parent.counter = 0;
+            parent.$watch(
+                function(scope) { 
+                    return scope.aValue; 
+                }, function(newValue, oldValue, scope) {
+                    scope.counter++;
+                }
+            );
+
+            child2.$apply(function(scope) { });
+            expect(parent.counter).toBe(1);
         });
     });
 });
