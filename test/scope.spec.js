@@ -998,5 +998,55 @@
             child2.$apply(function(scope) { });
             expect(parent.counter).toBe(1);
         });
+
+        it('schedules a digest from root on $evalAsync when isolated', function(done) {
+            var parent = new Scope();
+            var child = parent.$new(true);
+            var child2 = child.$new();
+
+            parent.aValue = 'abc';
+            parent.counter = 0;
+            parent.$watch(
+                function(scope) {
+                    return scope.aValue;
+                }, function(newValue, oldValue, scope) {
+                    scope.counter++;
+                }
+            );
+
+            child2.$evalAsync(function(scope) {});
+
+            setTimeout(function() {
+                expect(parent.counter).toBe(1);
+                done();
+            }, 50);
+        });
+
+        it('executes $evalAsync functions on isolated scopes', function(done) {
+            var parent = new Scope();
+            var child = parent.$new(true);
+
+            child.$evalAsync(function(scope) {
+                scope.didEvalAsync = true;
+            });
+
+            setTimeout(function() {
+                expect(child.didEvalAsync).toBe(true);
+                done();
+            }, 50);
+        });
+
+        it('executes $$postDigest functions on isolated scopes', function() {
+            var parent = new Scope();
+            var child = parent.$new(true);
+
+            child.$$postDigest(function() {
+                child.didPostDigest = true;
+            });
+
+            parent.$digest();
+
+            expect(child.didPostDigest).toBe(true);
+        });
     });
 });

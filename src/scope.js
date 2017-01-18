@@ -19,6 +19,9 @@ Scope.prototype.$new = function(isolated) {
     var child;
     if (isolated) {
         child = new Scope();
+        child.$root = this.$root;
+        child.$$asyncQueue = this.$$asyncQueue;
+        child.$$postDigestQueue = this.$$postDigestQueue;
     } else {
         var ChildScope = function() { }; 
         ChildScope.prototype = this;
