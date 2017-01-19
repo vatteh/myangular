@@ -15,22 +15,25 @@ function Scope() {
     this.$$phase = null;
 }
 
-Scope.prototype.$new = function(isolated) { 
+Scope.prototype.$new = function(isolated, parent) { 
     var child;
+    parent = parent || this;
     if (isolated) {
         child = new Scope();
-        child.$root = this.$root;
-        child.$$asyncQueue = this.$$asyncQueue;
-        child.$$postDigestQueue = this.$$postDigestQueue;
+        child.$root = parent.$root;
+        child.$$asyncQueue = parent.$$asyncQueue;
+        child.$$postDigestQueue = parent.$$postDigestQueue;
+        child.$$applyAsyncQueue = parent.applyAsyncQueue;
     } else {
         var ChildScope = function() { }; 
         ChildScope.prototype = this;
         child = new ChildScope();
     }
     
-    this.$$children.push(child);
+    parent.$$children.push(child);
     child.$$watchers = [];
     child.$$children = [];
+    child.$parent = parent;
     return child;
 };
 
@@ -102,8 +105,8 @@ Scope.prototype.$digest = function() {
     this.$root.$$lastDirtyWatch = null;
     this.$beginPhase("$digest");
 
-    if (this.$$applyAsyncId) { 
-        clearTimeout(this.$$applyAsyncId);
+    if (this.$root.$$applyAsyncId) { 
+        clearTimeout(this.$root.$$applyAsyncId);
         this.$$flushApplyAsync();
     }
 
@@ -186,8 +189,8 @@ Scope.prototype.$applyAsync = function(expr) {
         self.$eval(expr);
     });
 
-    if (self.$$applyAsyncId === null) {
-        self.$$applyAsyncId = setTimeout(function() { 
+    if (self.$root.$$applyAsyncId === null) {
+        self.$root.$$applyAsyncId = setTimeout(function() { 
             self.$apply(_.bind(self.$$flushApplyAsync, self));
         }, 0);
     }
@@ -202,7 +205,7 @@ Scope.prototype.$$flushApplyAsync = function() {
         }
     }
 
-    this.$$applyAsyncId = null;
+    this.$root.$$applyAsyncId = null;
 };
 
 Scope.prototype.$$postDigest = function(fn) {
@@ -257,6 +260,18 @@ Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
             destroyFunction();
         });
     };
+};
+
+Scope.prototype.$destroy = function() {
+    if (this.$parent) {
+        var siblings = this.$parent.$$children;
+        var indexOfThis = siblings.indexOf(this);
+        if (indexOfThis > -1) {
+            siblings.splice(indexOfThis, 1);
+        }
+    }
+
+    this.$$watchers = null;
 };
 
 module.exports = Scope;
