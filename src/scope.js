@@ -57,6 +57,25 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
     };
 };
 
+Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
+    var self = this;
+    var newValue;
+    var oldValue;
+
+    var internalWatchFn = function(scope) {
+        newValue = watchFn(scope);
+
+        oldValue = newValue;
+    };
+
+    var internalListnerFn = function() {
+        listenerFn(newValue, oldValue, self);
+
+    };
+
+    return this.$watch(internalWatchFn, internalListnerFn);
+};
+
 Scope.prototype.$$digestOnce = function() {
     var dirty;
     var continueLoop = true;
