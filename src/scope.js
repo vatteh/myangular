@@ -67,7 +67,7 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
         newValue = watchFn(scope);
 
         if (_.isObject(newValue)) {
-            if(_.isArray(newValue)) {
+            if(isArrayLike(newValue)) {
                 if(!_.isArray(oldValue)) {
                     changeCount++;
                     oldValue = [];
@@ -84,7 +84,18 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
                     }
                 });
             } else {
+                if (!_.isObject(oldValue) || isArrayLike(oldValue)) {
+                    changeCount++;
+                    oldValue = {};
+                }
 
+                _.forOwn(newValue, function(newVal, key) {
+                    var bothNaN = _.isNaN(newVal) && _.isNaN(oldValue[key]);
+                    if (!bothNaN && oldValue[key] !== newVal) {
+                        changeCount++;
+                        oldValue[key] = newVal;
+                    }
+                });
             }
         } else {
             if (!self.$$areEqual(newValue, oldValue, false)) {
@@ -103,6 +114,15 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
         listenerFn(newValue, oldValue, self);
 
     };
+
+    function isArrayLike(obj) {
+        if (_.isNull(obj) || _.isUndefined(obj)) {
+            return false;
+        }
+
+        var length = obj.length;
+        return _.isNumber(length);
+    }
 
     return this.$watch(internalWatchFn, internalListnerFn);
 };
