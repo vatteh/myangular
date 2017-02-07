@@ -12,6 +12,7 @@ function Scope() {
     this.$$postDigestQueue = [];
     this.$root = this;
     this.$$children = [];
+    this.$$listeners = {};
     this.$$phase = null;
 }
 
@@ -65,6 +66,7 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
     var veryOldValue;
     var trackVeryOldValue = (listenerFn.length > 1);
     var changeCount = 0;
+    var firstRun = true;
 
     var internalWatchFn = function(scope) {
         var newLength;
@@ -128,13 +130,16 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
             oldValue = newValue;
         }
 
-
-
         return changeCount;
     };
 
     var internalListnerFn = function() {
-        listenerFn(newValue, veryOldValue, self);
+        if (firstRun) {
+            listenerFn(newValue, newValue, self);    
+            firstRun = false;
+        } else {
+            listenerFn(newValue, veryOldValue, self);
+        }
 
         if (trackVeryOldValue) {
             veryOldValue = _.clone(newValue);
@@ -368,6 +373,16 @@ Scope.prototype.$destroy = function() {
     }
 
     this.$$watchers = null;
+};
+
+Scope.prototype.$on = function(eventName, listener) {
+    var listeners = this.$$listeners[eventName];
+    
+    if(!listeners) {
+        this.$$listeners[eventName] = listeners = [];
+    }
+
+    listeners.push(listener);
 };
 
 module.exports = Scope;

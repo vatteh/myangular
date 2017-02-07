@@ -1511,6 +1511,51 @@
 
             expect(oldValueGiven).toEqual({ a: 1, b: 2 });
         });
+
+        it('uses the new value as the old value on the first digest', function() {
+            scope.aValue = { a: 1, b:2 };
+            var oldValueGiven;
+
+            scope.$watchCollection(
+                function(scope) { return scope.aValue; },
+                function(newValue, oldValue, scope) {
+                    oldValueGiven = oldValue;
+                }
+            );
+
+            scope.$digest();
+
+            expect(oldValueGiven).toEqual({ a: 1, b: 2 });
+        });
+    });
+
+    describe('events', function() {
+        var parent;
+        var scope;
+        var child;
+        var isolatedChild;
+
+        beforeEach(function() {
+            parent = new Scope();
+            scope = parent.$new();
+            child = scope.$new();
+            isolatedChild = scope.$new(true);
+        });
+
+        it('allows registering listeners', function() {
+            var listener1 = function() { };
+            var listener2 = function() { };
+            var listener3 = function() { };
+
+            scope.$on('someEvent', listener1);
+            scope.$on('someEvent', listener2);
+            scope.$on('someOtherEvent', listener3);
+
+            expect(scope.$$listeners).toEqual({
+                someEvent: [listener1, listener2],
+                someOtherEvent: [listener3]
+            });
+        });
     });
 });
 
