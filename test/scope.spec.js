@@ -1624,6 +1624,41 @@
                 expect(event1).toEqual(event2);
             });
         });
+
+        _.forEach(['$emit', '$broadcast'], function(method) {
+            it('passes additional arguments to listeners on' + method, function() {
+                var listener = jasmine.createSpy();
+                scope.$on('someEvent', listener);
+
+                scope[method]('someEvent', 'and', ['additional', 'arguments'], '...');
+
+                expect(listener.calls.mostRecent().args[1]).toEqual('and');
+                expect(listener.calls.mostRecent().args[2]).toEqual(['additional', 'arguments']);
+                expect(listener.calls.mostRecent().args[3]).toEqual('...');
+            });
+        });
+
+        _.forEach(['$emit', '$broadcast'], function(method) {
+            it('returns the event object on ' + method, function() {
+                var returnedEvent = scope[method]('someEvent');
+
+                expect(returnedEvent).toBeDefined();
+                expect(returnedEvent.name).toEqual('someEvent');
+            });
+        });
+
+        _.forEach(['$emit', '$broadcast'], function(method) {
+            it('can be deregistered ' + method, function() {
+                var listener = jasmine.createSpy();
+                var deregister = scope.$on('someEvent', listener);
+
+                deregister();
+
+                scope[method]('someEvent');
+
+                expect(listener).not.toHaveBeenCalled();
+            });
+        });
     });
 });
 
