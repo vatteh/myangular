@@ -1571,18 +1571,6 @@
             expect(isolatedChild.$$listeners).toEqual({ someEvent: [listener3] });
         });
 
-        it('calls the listeners of the matching event on $emit', function() {
-            var listener1 = jasmine.createSpy();
-            var listener2 = jasmine.createSpy();
-            scope.$on('someEvent', listener1);
-            scope.$on('someOtherEvent', listener2);
-
-            scope.$emit('someEvent');
-
-            expect(listener1).toHaveBeenCalled();
-            expect(listener2).not.toHaveBeenCalled();
-        });
-
         _.forEach(['$emit', '$broadcast'], function(method) {
             it('calls the listeners of the matching event on ' + method, function() {
                 var listener1 = jasmine.createSpy();
@@ -1657,6 +1645,25 @@
                 scope[method]('someEvent');
 
                 expect(listener).not.toHaveBeenCalled();
+            });
+        });
+
+        _.forEach(['$emit', '$broadcast'], function(method) {
+            it('does not skip the next listener when removed on ' + method, function() {
+                var deregister;
+
+                var listener = function() {
+                    deregister();
+                };
+
+                var nextListener = jasmine.createSpy();
+
+                deregister = scope.$on('someEvent', listener);
+                scope.$on('someEvent', nextListener);
+
+                scope[method]('someEvent');
+
+                expect(nextListener).toHaveBeenCalled();
             });
         });
     });
