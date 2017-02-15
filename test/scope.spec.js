@@ -1840,6 +1840,65 @@
 
             expect(listener2).toHaveBeenCalled();
         });
+
+        _.forEach(['$emit', '$broadcast'], function(method) {
+            it('is sets defaultPrevented when preventDefault called on ' + method, function() {
+                var listener = function(event) {
+                    event.preventDefault();
+                };
+
+                scope.$on('someEvent', listener);
+
+                var event = scope[method]('someEvent');
+
+                expect(event.defaultPrevented).toBe(true);
+            });
+        });
+
+        it('fires $destroy when destroyed', function() {
+            var listener = jasmine.createSpy();
+            scope.$on('$destroy', listener);
+
+            scope.$destroy();
+
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it('fires $destroy on children destroyed', function() {
+            var listener = jasmine.createSpy();
+            child.$on('$destroy', listener);
+
+            scope.$destroy();
+
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it('no longer calls listeners after destroyed', function() {
+            var listener = jasmine.createSpy();
+            scope.$on('myEvent', listener);
+
+            scope.$destroy();
+
+            scope.$emit('myEvent');
+
+            expect(listener).not.toHaveBeenCalled();
+        });
+
+        _.forEach(['$emit', '$broadcast'], function(method) {
+            it('does not stop on exceptions on ' + method, function () {
+                var listener1 = function(event) {
+                    throw 'listener1 throwing an exception';
+                };
+
+                var listener2 = jasmine.createSpy();
+                scope.$on('someEvent', listener1);
+                scope.$on('someEvent', listener2);
+
+                scope[method]('someEvent');
+
+                expect(listener2).toHaveBeenCalled();
+            });
+        });
     });
 });
 
