@@ -32,6 +32,25 @@ Lexer.prototype.isNumber = function(ch) {
     return '0' <= ch && ch <= '9';
 };
 
+Lexer.prototype.readNumber = function() {
+    var number = '';
+    while (this.index < this.text.length) {
+        var ch = this.text.charAt(this.index);
+        if (this.isNumber(ch)) {
+            number += ch;
+        } else {
+            break;
+        }
+
+        this.index++;
+    }
+
+    this.tokens.push({
+        text: number,
+        value: Number(number)
+    });
+};
+
 function AST(lexer) {
     this.lexer = lexer;
 }
