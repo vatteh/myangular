@@ -55,9 +55,20 @@ function AST(lexer) {
     this.lexer = lexer;
 }
 
+AST.Program = 'Program';
+AST.Literal = 'Literal';
+
 AST.prototype.ast = function(text) {
     this.tokens = this.lexer.lex(text);
-    // body...
+    return this.program();
+};
+
+AST.prototype.program = function() {
+    return { type: AST.Program, body: this.constant() };
+};
+
+AST.prototype.constant = function() {
+    return { type: AST.Literal, value: this.tokens[0].value };
 };
 
 function ASTCompiler(astBuilder) {
@@ -66,6 +77,21 @@ function ASTCompiler(astBuilder) {
 
 ASTCompiler.prototype.compile = function(text) {
     var ast = this.astBuilder.ast(text);
+    this.state = { body: [] };
+    this.recurse(ast);
+
+    /* jshint -W054 */
+    return new Function(this.state.body.join(''));
+    /* jshint +W054 */
+};
+
+ASTCompiler.prototype.recurse = function(ast) {
+    switch (ast.type) {
+        case AST.Program:
+
+        case AST.Literal:
+            return ast.value;
+    }
 };
 
 function Parser(lexer) {
