@@ -26,6 +26,10 @@ Lexer.prototype.lex = function(text) {
             this.readNumber();
         } else if (this.ch === '\'' || this.ch === '"') {
             this.readString(this.ch);
+        } else if (this.isIdent(this.ch)) {
+            this.readIdent();
+        } else if (this.isWhitespace(this.ch)) {
+            this.index++;
         } else {
             throw 'Unexpected next character: ' + this.ch;
         }
@@ -116,6 +120,32 @@ Lexer.prototype.isExpOperator = function(ch) {
     return ch === '-' || ch === '+' || this.isNumber(ch);
 };
 
+Lexer.prototype.isIdent = function(ch) {
+    return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch === '_' || ch === '$';
+};
+
+Lexer.prototype.readIdent = function() {
+    var text = '';
+    while (this.index < this.text.length) {
+        var ch = this.text.charAt(this.index);
+        if (this.isIdent(ch) || this.isNumber(ch)) {
+            text += ch;
+        } else {
+            break;
+        }
+        this.index++;
+    }
+
+    var token = { text: text };
+
+    this.tokens.push(token);
+};
+
+Lexer.prototype.isWhitespace = function(ch) {
+    return ch === ' ' || ch === '\r' || ch === '\t' ||
+           ch === '\n' || ch === '\v' || ch === '\u00A0';
+};
+
 function AST(lexer) {
     this.lexer = lexer;
 }
@@ -129,11 +159,25 @@ AST.prototype.ast = function(text) {
 };
 
 AST.prototype.program = function() {
-    return { type: AST.Program, body: this.constant() };
+    return { type: AST.Program, body: this.primary() };
+};
+
+AST.prototype.primary = function() {
+    if (this.constants.hasOwnProperty(this.tokens[0].text)) {
+        return this.constants[this.tokens[0].text];
+    } else {
+        return this.constant();
+    }
 };
 
 AST.prototype.constant = function() {
     return { type: AST.Literal, value: this.tokens[0].value };
+};
+
+AST.prototype.constants = {
+    'null': { type: AST.Literal, value: null },
+    'true': { type: AST.Literal, value: true },
+    'false': { type: AST.Literal, value: false },
 };
 
 function ASTCompiler(astBuilder) {
@@ -165,6 +209,8 @@ ASTCompiler.prototype.recurse = function(ast) {
 ASTCompiler.prototype.escape = function(value) {
     if (_.isString(value)) {
         return '\'' + value.replace(this.stringEscapeRegex, this.stringEscapeFn) + '\'';
+    } else if (_.isNull(value)) {
+        return 'null';
     } else {
         return value;
     }
