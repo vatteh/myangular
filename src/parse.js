@@ -193,7 +193,7 @@ AST.prototype.arrayDeclaration = function() {
         } while (this.expect(','));
     }
     this.consume(']');
-    return { type: AST.ArrayExpression };
+    return { type: AST.ArrayExpression, elements: elements };
 };
 
 AST.prototype.consume = function(e) {
@@ -214,7 +214,7 @@ AST.prototype.peek = function(e) {
 };
 
 AST.prototype.constant = function() {
-    return { type: AST.Literal, value: this.tokens[0].value };
+    return { type: AST.Literal, value: this.consume().value };
 };
 
 AST.prototype.constants = {
@@ -247,7 +247,11 @@ ASTCompiler.prototype.recurse = function(ast) {
         case AST.Literal:
             return this.escape(ast.value);
         case AST.ArrayExpression:
-            return '[]';
+            var that = this;
+            var elements = _.map(ast.elements, function(element) {
+                return that.recurse(element);
+            });
+            return '[' + elements.join(',') + ']';
     }
 };
 
