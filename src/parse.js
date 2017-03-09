@@ -22,11 +22,11 @@ Lexer.prototype.lex = function(text) {
 
     while (this.index < this.text.length) {
         this.ch = this.text.charAt(this.index);
-        if (this.isNumber(this.ch) || (this.ch === '.' && this.isNumber(this.peek()))) {
+        if (this.isNumber(this.ch) || (this.is('.') && this.isNumber(this.peek()))) {
             this.readNumber();
-        } else if (this.ch === '\'' || this.ch === '"') {
+        } else if (this.is('\'"')) {
             this.readString(this.ch);
-        } else if (this.ch === '[' || this.ch === ']' || this.ch === ',') {
+        } else if (this.is('[],{}:')) {
             this.tokens.push({
                 text: this.ch
             });
@@ -41,6 +41,10 @@ Lexer.prototype.lex = function(text) {
     }
 
     return this.tokens;
+};
+
+Lexer.prototype.is = function(chs) {
+    return chs.indexOf(this.ch) >= 0;
 };
 
 Lexer.prototype.isNumber = function(ch) {
@@ -171,6 +175,8 @@ AST.prototype.program = function() {
 AST.prototype.primary = function() {
     if (this.expect('[')) {
         return this.arrayDeclaration();
+    } else if (this.expect('{')) {
+        return this.object();
     } else if (this.constants.hasOwnProperty(this.tokens[0].text)) {
         return this.constants[this.consume().text];
     } else {
@@ -189,6 +195,9 @@ AST.prototype.arrayDeclaration = function() {
     var elements = [];
     if (!this.peek(']')) {
         do {
+            if (this.peek(']')) {
+                break;
+            }
             elements.push(this.primary());
         } while (this.expect(','));
     }
