@@ -185,6 +185,8 @@ AST.prototype.primary = function() {
         return this.object();
     } else if (this.constants.hasOwnProperty(this.tokens[0].text)) {
         return this.constants[this.consume().text];
+    } else if (this.peek().identifier) {
+        return this.identifier();
     } else {
         return this.constant();
     }
@@ -254,7 +256,7 @@ AST.prototype.constant = function() {
 
 AST.prototype.identifier = function() {
     return { type: AST.identifier, name: this.consume().text };
-}
+};
 
 AST.prototype.constants = {
     'null': { type: AST.Literal, value: null },
@@ -274,7 +276,7 @@ ASTCompiler.prototype.compile = function(text) {
     this.recurse(ast);
 
     /* jshint -W054 */
-    return new Function(this.state.body.join(''));
+    return new Function('s', this.state.body.join(''));
     /* jshint +W054 */
 };
 
@@ -293,12 +295,19 @@ ASTCompiler.prototype.recurse = function(ast) {
             return '[' + elements.join(',') + ']';
         case AST.ObjectExpression:
             var properties = _.map(ast.properties, function(property) {
-                var key = that.escape(property.key.value);
+                var key = property.key.type === AST.Identifier ? property.key.name : that.escape(property.key.value);
                 var value = that.recurse(property.value);
                 return key + ':' + value;
             });
             return '{' + properties.join(',') + '}';
+        case AST.Identifier: 
+            this.if_('s', '');
+            return this.nonComputedMember('s', ast.name);
     }
+};
+
+ASTCompiler.prototype.nonComputedMember = function(left, right) {
+    return '(' + left + ').' + right;
 };
 
 ASTCompiler.prototype.escape = function(value) {
@@ -313,6 +322,10 @@ ASTCompiler.prototype.escape = function(value) {
 
 ASTCompiler.prototype.stringEscapeFn = function(c) {
     return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
+};
+
+ASTCompiler.prototype.if_ = function(test, consequent) {
+    this.state.body.push('if(', test, '){', consequent, '}');
 };
 
 function Parser(lexer) {
