@@ -223,7 +223,6 @@ AST.prototype.object = function() {
             } else {
                 property.key = this.constant();
             }
-            property.key = this.constant();
             this.consume(':');
             property.value = this.primary();
             properties.push(property);
@@ -255,7 +254,7 @@ AST.prototype.constant = function() {
 };
 
 AST.prototype.identifier = function() {
-    return { type: AST.identifier, name: this.consume().text };
+    return { type: AST.Identifier, name: this.consume().text };
 };
 
 AST.prototype.constants = {
@@ -301,8 +300,9 @@ ASTCompiler.prototype.recurse = function(ast) {
             });
             return '{' + properties.join(',') + '}';
         case AST.Identifier: 
-            this.if_('s', '');
-            return this.nonComputedMember('s', ast.name);
+            this.state.body.push('var v0;');
+            this.if_('s', this.assign('v0', this.nonComputedMember('s', ast.name)));
+            return 'v0';
     }
 };
 
@@ -326,6 +326,10 @@ ASTCompiler.prototype.stringEscapeFn = function(c) {
 
 ASTCompiler.prototype.if_ = function(test, consequent) {
     this.state.body.push('if(', test, '){', consequent, '}');
+};
+
+ASTCompiler.prototype.assign = function(id, value) {
+    return id + '=' + value + ';';
 };
 
 function Parser(lexer) {

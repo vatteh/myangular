@@ -145,5 +145,5 @@ describe('parse', function() {
     it('returns undefined when looking up attribute from undefined', function() {
         var fn = parse('aKey');
         expect(fn()).toBeUndefined();
-    })
+    });
 });
